@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Friendship Quiz 💖</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- libs -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --pink: #ff69b4;
+            --pink2: #ff1493;
+            --glass: rgba(0, 0, 0, .65);
+            --card-w: 780px;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Trebuchet MS', system-ui, sans-serif;
+            background: url("https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1400&q=80") center/cover fixed no-repeat;
+            margin: 0;
+            padding: 40px 16px;
+            color: #fff;
+            text-align: center;
+            overflow-x: hidden;
+        }
+
+        .card {
+            max-width: var(--card-w);
+            margin: 0 auto;
+            background: var(--glass);
+            border-radius: 22px;
+            padding: 28px;
+            box-shadow: 0 0 24px rgba(255, 105, 180, .8);
+            animation: fadeIn .7s ease both;
+            backdrop-filter: blur(6px);
+        }
+
+        h1,
+        h2 {
+            margin: 0 0 12px;
+            text-shadow: 0 0 10px var(--pink)
+        }
+
+        p.lead {
+            opacity: .9;
+            margin: .25rem 0 1rem
+        }
+
+        input[type=password],
+        input[type=text] {
+            width: min(520px, 90%);
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: none;
+            outline: none;
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+
+        button {
+            margin-top: 16px;
+            padding: 12px 22px;
+            font-size: 1.05rem;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--pink), var(--pink2));
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, .35);
+            transition: transform .15s, box-shadow .15s, opacity .15s;
+        }
+
+        button:hover {
+            transform: translateY(-1px) scale(1.03);
+        }
+
+        button:disabled {
+            opacity: .6;
+            cursor: not-allowed
+        }
+
+        #quiz {
+            max-width: var(--card-w);
+            margin: 24px auto
+        }
+
+        .option {
+            display: block;
+            width: min(640px, 95%);
+            margin: 10px auto;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(135deg, #fff, #eaeaea);
+            color: #222;
+            font-size: 1rem;
+            transition: transform .15s, box-shadow .15s, opacity .15s;
+        }
+
+        .option:hover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
+        }
+
+        .correct {
+            background: linear-gradient(135deg, #2ecc71, #8cff9c) !important;
+            color: #fff;
+            font-weight: 700
+        }
+
+        .wrong {
+            background: linear-gradient(135deg, #e74c3c, #ff7b7b) !important;
+            color: #fff;
+            font-weight: 700
+        }
+
+        #score {
+            font-weight: 800;
+            color: #faf8f8;
+            margin-top: 8px
+        }
+
+        #heart {
+            display: none;
+            font-size: 70px;
+            margin-top: 8px;
+            animation: heartbeat 1s infinite;
+            color: red;
+        }
+
+        .footer-strip {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, .55);
+            padding: 8px 0;
+            overflow: hidden;
+            border-top: 1px solid rgba(255, 255, 255, .12);
+            backdrop-filter: blur(5px);
+        }
+
+        .marquee {
+            display: flex;
+            gap: 12px;
+            width: max-content;
+            white-space: nowrap;
+            animation: scroll 22s linear infinite;
+            padding-left: 100vw;
+        }
+
+        .thumb {
+            width: 120px;
+            height: 72px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex: 0 0 auto;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, .35);
+            background: #111;
+        }
+
+        .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block
+        }
+
+        .strip-title {
+            position: absolute;
+            left: 10px;
+            top: -26px;
+            font-size: .85rem;
+            opacity: .85
+        }
+
+        #pdfOnly {
+            display: none
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes heartbeat {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.25)
+            }
+        }
+
+        @keyframes scroll {
+            from {
+                transform: translateX(0)
+            }
+
+            to {
+                transform: translateX(-100%)
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <audio id="bgMusic" loop preload="auto">
+        <source src="nenjikulla.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="correctSound" preload="auto">
+        <source src="correctbgm.wav" type="audio/wav">
+    </audio>
+    <audio id="wrongSound" preload="auto">
+        <source src="wrongbgm.wav" type="audio/wav">
+    </audio>
+
+    <div id="passwordScreen" class="card">
+        <h2>🔒 Enter Password to Unlock</h2>
+        <p class="lead">Please enter the secret key to start the friendship quiz.</p>
+        <input type="password" id="passwordInput" placeholder="Enter password..." />
+        <div><button onclick="checkPassword()">Submit</button></div>
+        <p id="errorMsg" style="color:#ffb4b4; display:none; font-weight:700; margin-top:8px;">❌ Wrong password, try
+            again!</p>
+    </div>
+
+    <div id="startScreen" class="card" style="display:none;">
+        <h1>💖 Friendship Quiz 💖</h1>
+        <p class="lead">Ready ah? Click start and let’s go!</p>
+        <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="score"></div>
+    <div id="quiz"></div>
+    <div id="heart">💔</div>
+    <div id="certificate"></div>
+
+    <div class="footer-strip" id="footerStrip" style="display:none;">
+        <div class="strip-title">✅ Correct answers gallery</div>
+        <div class="marquee" id="marquee"></div>
+    </div>
+
+    <div id="pdfOnly" aria-hidden="true"></div>
+
+    <script>
+        const friendName = "Sare Sivagami";
+        const password = "Sare69";
+        const maxAttemptsPerQuestion = 2;
+
+        const questions = [
+            { q: "1. In Which Standard did we first meet😇?", options: ["6th Std👩‍💼", "7th Std👩‍💼", "8th Std👩‍💼", "9th Std👩‍💼"], answer: "7th Std👩‍💼", img: "kovil.jpeg" },
+            { q: "2. In Which year we Reconnected😎? (Clue – postponed Chemistry exam)", options: ["2019", "2022", "2021", "2020"], answer: "2020", img: "terros.jpeg" },
+            { q: "3. In 7th Std, You created a name for me by mistake. What is it? 🤗", type: "fill", answer: "Sivaruby", img: "bed.jpeg" },
+            { q: "4. During Pandemic, which platform started our 'Gud mrng' & 'Gud nytii'? 😉", options: ["Phone Call", "Whatsapp", "Instagram", "Snapchat"], answer: "Whatsapp", img: "pillowhug2.jpeg" },
+            { q: "5. Which number did you first message me? 🤔", options: ["📞8667...179", "📞9566...197", "📞7904...434", "📞6380...325"], answer: "📞8667...179", img: "clinic.jpeg" },
+            { q: "6. Funniest reason for our fight? 😁", options: ["Who wakes up first", "Missed my voice note", "Not replying fast", "Boring Texts"], answer: "Missed my voice note", img: "pillowhug.jpeg" },
+            { q: "7. How did I save your number first? 🤗", options: ["Sare", "Sare Sivagami", "Pulla❤️", "Sivagami"], answer: "Pulla❤️", img: "blackandwhite.jpeg" },
+            { q: "8. During school days, where did we usually go together?", options: ["Nearby parks 🌳", "School competitions venues 🏫", "Friend’s house 🏠", "Cafes ☕"], answer: "School competitions venues 🏫", img: "road.jpeg" },
+            { q: "9. Which is our favorite song we love to sing? 🎶", options: ["Poraaney Poraaney", "Something Something", "Yeya Yen Kottikara", "Ask Asku"], answer: "Poraaney Poraaney", img: "saturday.jpeg" },
+            { q: "10. If I describe our friendship in few words, it would be? 😊", options: ["Forever Special😍", "Good Friendship😇", "Special Bond🤗", "Just Friend😊"], answer: "Forever Special😍", img: "juiceshop.jpeg" }
+        ];
+
+        let current = 0, score = 0, attempts = 0;
+
+        const $passwordScreen = document.getElementById("passwordScreen");
+        const $startScreen = document.getElementById("startScreen");
+        const $quiz = document.getElementById("quiz");
+        const $score = document.getElementById("score");
+        const $heart = document.getElementById("heart");
+        const $certificate = document.getElementById("certificate");
+        const $footerStrip = document.getElementById("footerStrip");
+        const $marquee = document.getElementById("marquee");
+        const $pdfOnly = document.getElementById("pdfOnly");
+
+        function checkPassword() {
+            const val = document.getElementById("passwordInput").value;
+            if (val === password) {
+                document.getElementById("errorMsg").style.display = "none";
+                confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
+                $passwordScreen.style.display = "none";
+                $startScreen.style.display = "block";
+                try { document.getElementById("bgMusic").play().catch(() => { }); } catch (e) { }
+            } else {
+                document.getElementById("errorMsg").style.display = "block";
+            }
+        }
+
+        function startQuiz() {
+            $startScreen.style.display = "none";
+            $quiz.innerHTML = "";
+            current = 0; score = 0; attempts = 0;
+            $footerStrip.style.display = "block";
+            updateScore();
+            loadQuestion();
+        }
+
+        function updateScore() { $score.textContent = `⭐ Score: ${score}/${questions.length}`; }
+
+        function loadQuestion() {
+            attempts = 0; $heart.style.display = "none";
+            if (current >= questions.length) { showCertificate(); return; }
+            const q = questions[current];
+            let html = `<div class="card"><h2>${q.q}</h2>`;
+            if (q.type === "fill") {
+                html += `<input type="text" id="fillAnswer" placeholder="Type your answer..." />
+               <div><button onclick="checkFillAnswer()">Submit</button></div>`;
+            } else {
+                (q.options || []).forEach(opt => {
+                    html += `<button class="option" onclick="checkAnswer(this, '${escapeQuotes(q.answer)}', '${escapeQuotes(q.img)}')">${opt}</button>`;
+                });
+            }
+            html += `</div>`;
+            $quiz.innerHTML = html;
+        }
+
+        function escapeQuotes(str) { return (str || "").replace(/'/g, "&#39;").replace(/"/g, "&quot;"); }
+        function play(id) { try { document.getElementById(id).currentTime = 0; document.getElementById(id).play().catch(() => { }); } catch (e) { } }
+        function disableOptions() { document.querySelectorAll(".option").forEach(b => b.disabled = true); }
+
+        function checkAnswer(btn, correct, img) {
+            if (btn.innerText === correct) {
+                btn.classList.add("correct");
+                score++; updateScore();
+                confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+                play("correctSound"); disableOptions(); addThumb(img);
+                setTimeout(() => { current++; loadQuestion(); }, 1500);
+            } else {
+                attempts++; btn.classList.add("wrong"); play("wrongSound");
+                $heart.style.display = "block"; setTimeout(() => { $heart.style.display = "none"; }, 1000);
+                if (attempts >= maxAttemptsPerQuestion) { disableOptions(); setTimeout(() => { current++; loadQuestion(); }, 1500); }
+            }
+        }
+
+        function checkFillAnswer() {
+            const ans = (document.getElementById("fillAnswer").value || "").trim();
+            const correct = questions[current].answer; attempts++;
+            if (ans.toLowerCase() === correct.toLowerCase()) {
+                score++; updateScore(); confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+                play("correctSound"); addThumb(questions[current].img); setTimeout(() => { current++; loadQuestion(); }, 1500);
+            } else {
+                play("wrongSound"); $heart.style.display = "block"; setTimeout(() => { $heart.style.display = "none"; }, 1000);
+                if (attempts >= maxAttemptsPerQuestion) { setTimeout(() => { current++; loadQuestion(); }, 1500); }
+            }
+        }
+
+        function addThumb(imgSrc) {
+            if (!imgSrc) return;
+            const box = document.createElement("div");
+            box.className = "thumb";
+            box.innerHTML = `<img src="${imgSrc}" alt="correct">`;
+            $marquee.appendChild(box);
+        }
+
+        function showCertificate() {
+            $quiz.innerHTML = "";
+            $certificate.innerHTML = `
+      <div class="card">
+        <h1>🎉 Quiz Completed! 🎉</h1>
+        <p class="lead"><b>${friendName}</b>, super! Your score is <b>${score}/${questions.length}</b>.</p>
+        <button onclick="downloadPDF()">Download Certificate (PDF)</button>
+      </div>
+    `;
+            const pdfHTML = `
+<div style="width:794px; height:1123px; padding:60px; 
+              font-family:'Trebuchet MS', sans-serif; color:#111; 
+              background:#fff; text-align:center; 
+              border:10px solid #6a0dad;">
+
+    <!-- Header -->
+    <h1 style="font-size:34px; margin-bottom:10px; color:#6a0dad;">
+      🎓 Certificate of Friendship 🎓
+    </h1>
+    <hr style="margin:20px 0; border:1px solid #999;">
+
+    <!-- Recipient -->
+    <p style="font-size:20px; margin-top:30px;">This certificate is proudly presented to</p>
+    <h2 style="font-size:42px; margin:10px 0; color:#6a0dad; 
+               font-family: 'Georgia', serif; font-weight:bold;">
+      Sare Sivagami
+    </h2>
+    <p style="font-size:18px; margin-bottom:40px;">
+      For completing the Friendship Quiz with a score of <b>${score}/${questions.length}</b>
+    </p>
+
+    <!-- Friendship Paragraph Section -->
+    <div style="margin:20px auto; width:85%; text-align:center; line-height:1.8; font-size:17px;">
+      💖 Our bond is forever special — This certificate is a memory of our beautiful connection.  
+      Through laughter, small fights, shared secrets, and countless memories, our friendship has become something truly irreplaceable.  
+      From <b>7th Std</b> till today, every moment with you has been a treasure.  
+
+      <br><br>
+      🎉 Happy 22nd Birthday, my dearest friend! 🎉  
+
+      <br><br>
+      ❤️ LUV U FOREVER ❤️
+    </div>
+
+    <!-- Signature Section -->
+    <div style="display:flex; justify-content:space-between; margin-top:70px; padding:0 80px;">
+      <div style="text-align:center;">
+        <p style="margin-bottom:50px;">Signature</p>
+        <p style="font-size:15px; border-top:1px solid #333; width:200px; margin:auto;">Ruby Reshma</p>
+      </div>
+      <div style="text-align:center;">
+        <p style="margin-bottom:50px;">Signature</p>
+        <p style="font-size:15px; border-top:1px solid #333; width:200px; margin:auto;">Sare Sivagami</p>
+      </div>
+    </div>
+
+    <!-- Date -->
+    <div style="margin-top:40px; font-size:16px; color:#555;">
+      Date: 06.09.2025
+    </div>
+  </div>`;
+            $pdfOnly.innerHTML = pdfHTML;
+        }
+
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            $pdfOnly.style.display = "block";
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+            await Promise.all([...$pdfOnly.querySelectorAll("img")].map(img => {
+                if (img.complete) return; return new Promise(res => { img.onload = res; img.onerror = res; });
+            }));
+            const canvas = await html2canvas($pdfOnly, { useCORS: true, scale: 2, backgroundColor: "#ffffff" });
+            const img = canvas.toDataURL("image/png"); $pdfOnly.style.display = "none";
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            const imgWmm = pageW;
+            const imgHmm = canvas.height * (pageW / canvas.width);
+            const y = (pageH - imgHmm) / 2;
+            pdf.addImage(img, "PNG", 0, Math.max(0, y), imgWmm, imgHmm);
+            pdf.save(`${friendName}_Certificate.pdf`);
+        }
+    </script>
+</body>
+
+</html>
